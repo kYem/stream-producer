@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"time"
-	"log"
 	"net/http"
 	"strings"
 	"io/ioutil"
@@ -66,7 +65,7 @@ func main() {
 		}
 	}()
 
-	log.Fatal(http.ListenAndServe(":8888", nil))
+	select {}
 
 }
 
