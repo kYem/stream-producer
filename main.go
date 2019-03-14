@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"time"
-	"net/http"
-	"strings"
-	"io/ioutil"
 	"gopkg.in/redis.v5"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 // Message gets exchanged between users through redis pub/sub messaging
@@ -25,10 +26,17 @@ const (
 	channelRate			   = 1
 )
 
+var hostname = apiHostname
+
 func main() {
 	client := redis.NewClient(&redis.Options{
 		Addr:     "localhost:6379",
 	})
+
+	v := os.Getenv("DOTA_TV_API_HOSTNAME")
+	if len(v) > 3 {
+		hostname = v
+	}
 
 	defer client.Close()
 	var channels []string
@@ -71,7 +79,7 @@ func main() {
 
 func publishMatchData(client *redis.Client, channelName string) {
 	s := strings.Split(channelName, ".")
-	url := fmt.Sprintf("http://%s%s?server_steam_id=%s", apiHostname, liveMatchEndpoint, s[1])
+	url := fmt.Sprintf("http://%s%s?server_steam_id=%s", hostname, liveMatchEndpoint, s[1])
 	fmt.Printf("Getting Match data from %s", url)
 	resp, err := http.Get(url)
 
