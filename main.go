@@ -19,26 +19,24 @@ type Message struct {
 }
 
 const (
+	apiHostname            = "api.dotatv.com"
 	liveMatchEndpoint      = "/live/stats"
 	channelLiveMatchPrefix = "dota_live_match."
 	publishRate            = 2
 	channelRate            = 1
 )
 
-var apiHostname = "localhost:8008"
+var hostname = apiHostname
 
 func main() {
 	client := redis.NewClient(&redis.Options{
 		Addr: "localhost:6379",
 	})
 
-	api := os.Getenv("DOTA_TV_API_HOSTNAME")
-	if api != "" {
-		apiHostname = api
+	v := os.Getenv("DOTA_TV_API_HOSTNAME")
+	if len(v) > 3 {
+		hostname = v
 	}
-
-	fmt.Printf("Connecting to api %s\n", apiHostname)
-
 
 	defer client.Close()
 	var channels []string
@@ -81,7 +79,7 @@ func main() {
 
 func publishMatchData(client *redis.Client, channelName string) {
 	s := strings.Split(channelName, ".")
-	url := fmt.Sprintf("http://%s%s?server_steam_id=%s", apiHostname, liveMatchEndpoint, s[1])
+	url := fmt.Sprintf("http://%s%s?server_steam_id=%s", hostname, liveMatchEndpoint, s[1])
 	fmt.Printf("Getting Match data from %s", url)
 	resp, err := http.Get(url)
 
