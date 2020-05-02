@@ -2,11 +2,12 @@ package main
 
 import (
 	"fmt"
-	"time"
-	"net/http"
-	"strings"
-	"io/ioutil"
 	"gopkg.in/redis.v5"
+	"io/ioutil"
+	"net/http"
+	"os"
+	"strings"
+	"time"
 )
 
 // Message gets exchanged between users through redis pub/sub messaging
@@ -18,17 +19,26 @@ type Message struct {
 }
 
 const (
-	apiHostname            = "api.dotatv.com"
 	liveMatchEndpoint      = "/live/stats"
 	channelLiveMatchPrefix = "dota_live_match."
-	publishRate			   = 2
-	channelRate			   = 1
+	publishRate            = 2
+	channelRate            = 1
 )
+
+var apiHostname = "localhost:8008"
 
 func main() {
 	client := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr: "localhost:6379",
 	})
+
+	api := os.Getenv("DOTA_TV_API_HOSTNAME")
+	if api != "" {
+		apiHostname = api
+	}
+
+	fmt.Printf("Connecting to api %s\n", apiHostname)
+
 
 	defer client.Close()
 	var channels []string
@@ -39,10 +49,10 @@ func main() {
 	go func() {
 		for {
 			select {
-			case <- ticker.C:
+			case <-ticker.C:
 				channels, err = client.PubSubChannels(channelLiveMatchPrefix + "*").Result()
 				fmt.Println(channels)
-			case <- quit:
+			case <-quit:
 				ticker.Stop()
 				return
 			}
@@ -54,7 +64,7 @@ func main() {
 	go func() {
 		for {
 			select {
-			case <- publishTicker.C:
+			case <-publishTicker.C:
 				for _, channelName := range channels {
 					go publishMatchData(client, channelName)
 				}
@@ -76,20 +86,22 @@ func publishMatchData(client *redis.Client, channelName string) {
 	resp, err := http.Get(url)
 
 	if err != nil {
-		panic(err)
+		fmt.Println(err)
+		return
 	}
 
 	if resp.Body == nil {
 		fmt.Println("Please send a request body")
+		return
 	}
 
 	defer resp.Body.Close()
-	contents, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
+	contents, bodyErr := ioutil.ReadAll(resp.Body)
+	if bodyErr != nil {
 		fmt.Println("Error on request body")
+		return
 	}
 
 	cmd := client.Publish(channelName, string(contents))
 	fmt.Printf("Channel %s, published to %d users", channelName, cmd.Val())
 }
-
