@@ -37,6 +37,7 @@ func main() {
 	if len(v) > 3 {
 		hostname = v
 	}
+	fmt.Printf("Connecting to %s\n", hostname)
 
 	defer client.Close()
 	var channels []string
@@ -49,7 +50,6 @@ func main() {
 			select {
 			case <-ticker.C:
 				channels, err = client.PubSubChannels(channelLiveMatchPrefix + "*").Result()
-				fmt.Println(channels)
 			case <-quit:
 				ticker.Stop()
 				return
@@ -80,7 +80,6 @@ func main() {
 func publishMatchData(client *redis.Client, channelName string) {
 	s := strings.Split(channelName, ".")
 	url := fmt.Sprintf("http://%s%s?server_steam_id=%s", hostname, liveMatchEndpoint, s[1])
-	fmt.Printf("Getting Match data from %s", url)
 	resp, err := http.Get(url)
 
 	if err != nil {
@@ -101,5 +100,5 @@ func publishMatchData(client *redis.Client, channelName string) {
 	}
 
 	cmd := client.Publish(channelName, string(contents))
-	fmt.Printf("Channel %s, published to %d users", channelName, cmd.Val())
+	fmt.Printf("Channel %s, published to %d users \n", channelName, cmd.Val())
 }
