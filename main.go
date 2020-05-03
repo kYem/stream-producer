@@ -19,7 +19,7 @@ type Message struct {
 }
 
 const (
-	apiHostname            = "api.dotatv.com"
+	apiHostname            = "api.dota.kyem.media"
 	liveMatchEndpoint      = "/live/stats"
 	channelLiveMatchPrefix = "dota_live_match."
 	publishRate            = 2
