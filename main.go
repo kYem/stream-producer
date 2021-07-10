@@ -1,8 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"gopkg.in/redis.v5"
+	"github.com/go-redis/redis/v8"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -27,6 +28,7 @@ const (
 )
 
 var hostname = apiHostname
+var ctx = context.Background()
 
 func main() {
 	client := redis.NewClient(&redis.Options{
@@ -49,7 +51,7 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				channels, err = client.PubSubChannels(channelLiveMatchPrefix + "*").Result()
+				channels, err = client.PubSubChannels(ctx, channelLiveMatchPrefix + "*").Result()
 			case <-quit:
 				ticker.Stop()
 				return
@@ -99,6 +101,6 @@ func publishMatchData(client *redis.Client, channelName string) {
 		return
 	}
 
-	cmd := client.Publish(channelName, string(contents))
+	cmd := client.Publish(ctx, channelName, string(contents))
 	fmt.Printf("Channel %s, published to %d users \n", channelName, cmd.Val())
 }

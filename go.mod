@@ -1,9 +1,5 @@
 module github.com/kYem/stream-producer
 
-go 1.12
+go 1.16
 
-require (
-	github.com/onsi/ginkgo v1.8.0 // indirect
-	github.com/onsi/gomega v1.5.0 // indirect
-	gopkg.in/redis.v5 v5.2.9
-)
+require github.com/go-redis/redis/v8 v8.11.0
