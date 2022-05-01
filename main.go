@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/go-redis/redis/v8"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -41,7 +42,12 @@ func main() {
 	}
 	fmt.Printf("Connecting to %s\n", hostname)
 
-	defer client.Close()
+	defer func(client *redis.Client) {
+		err := client.Close()
+		if err != nil {
+			fmt.Printf("Error in closing redis client %s", err.Error())
+		}
+	}(client)
 	var channels []string
 	var err error
 
@@ -51,7 +57,10 @@ func main() {
 		for {
 			select {
 			case <-ticker.C:
-				channels, err = client.PubSubChannels(ctx, channelLiveMatchPrefix + "*").Result()
+				channels, err = client.PubSubChannels(ctx, channelLiveMatchPrefix+"*").Result()
+				if err != nil {
+					fmt.Printf("Error in receiving PubSubChannels: %s", err.Error())
+				}
 			case <-quit:
 				ticker.Stop()
 				return
@@ -94,7 +103,13 @@ func publishMatchData(client *redis.Client, channelName string) {
 		return
 	}
 
-	defer resp.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Println("Failed to close body", err.Error())
+		}
+	}(resp.Body)
+
 	contents, bodyErr := ioutil.ReadAll(resp.Body)
 	if bodyErr != nil {
 		fmt.Println("Error on request body")
